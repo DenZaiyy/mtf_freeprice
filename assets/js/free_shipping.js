@@ -19,6 +19,15 @@
  * International Registered Trademark & Property of PrestaShop SA
  */
 
+// Track if we've already shown the celebration animation
+let celebrationShown = false;
+
+// Prevent multiple simultaneous AJAX requests
+let ajaxInProgress = false;
+
+// Track the last update time to prevent too frequent requests
+let lastUpdateTime = 0;
+
 document.addEventListener("DOMContentLoaded", function () {
     // Initialize free shipping progress bar
     initFreeShippingBar();
@@ -29,16 +38,18 @@ document.addEventListener("DOMContentLoaded", function () {
     // Listen for prestashop cart events
     listenToCartEvents();
 
-    // Force an initial AJAX update
-    setTimeout(updateFreeShippingBar, 500);
+    // Initial update on page load
+    updateFreeShippingBar();
+
+    // For debugging
+    console.log("Free shipping progress bar initialized");
 });
 
 /**
  * Initialize the free shipping progress bar
  */
 function initFreeShippingBar() {
-    // Add initial animation to progress bar
-    animateProgressBar();
+    // Nothing specific needed for initialization
 }
 
 /**
@@ -75,18 +86,12 @@ function listenToCartEvents() {
     cartEvents.forEach(function (eventName) {
         document.addEventListener(eventName, function (event) {
             console.log("Cart event detected:", eventName);
-            setTimeout(updateFreeShippingBar, 400);
+            updateFreeShippingBar();
         });
     });
 
     // Add event listeners to quantity inputs and update buttons
     addQuantityChangeListeners();
-
-    // Set up a periodic refresh to ensure we're always up to date
-    setInterval(updateFreeShippingBar, 3000);
-
-    // Also update on page load
-    updateFreeShippingBar();
 }
 
 /**
@@ -100,7 +105,7 @@ function addQuantityChangeListeners() {
         // Set up observer to watch for DOM changes in the cart
         const observer = new MutationObserver(function (mutations) {
             // After any DOM change in the cart, update the shipping bar
-            setTimeout(updateFreeShippingBar, 500);
+            updateFreeShippingBar();
         });
 
         // Start observing the cart container
@@ -118,46 +123,43 @@ function addQuantityChangeListeners() {
         if (
             event.target.closest(".js-update-product-quantity-up") ||
             event.target.closest(".js-update-product-quantity-down") ||
-            event.target.closest(".js-cart-line-product-quantity") ||
             event.target.closest(".js-cart-action-button")
         ) {
-            setTimeout(updateFreeShippingBar, 500);
+            updateFreeShippingBar();
         }
     });
 
     // Add a change event listener to the entire document to catch quantity input changes
     document.addEventListener("change", function (event) {
         if (event.target.classList.contains("js-cart-line-product-quantity")) {
-            setTimeout(updateFreeShippingBar, 700);
+            updateFreeShippingBar();
         }
     });
-
-    // Also listen for PrestaShop's custom events for quantity updates
-    document.addEventListener("updateProductInCart", function () {
-        setTimeout(updateFreeShippingBar, 500);
-    });
-
-    document.addEventListener("updatedProductInCart", function () {
-        setTimeout(updateFreeShippingBar, 500);
-    });
 }
-
-// Track the last update time to prevent too frequent requests
-let lastUpdateTime = 0;
 
 /**
  * Update free shipping progress bar via AJAX
  */
 function updateFreeShippingBar() {
-    // Prevent updating too frequently (at least 300ms between updates)
+    // Prevent updating too frequently (at least 1000ms between updates)
     const now = Date.now();
-    if (now - lastUpdateTime < 300) {
+    if (now - lastUpdateTime < 1000) {
+        console.log("Skipping update, too frequent");
         return;
     }
+
+    // Prevent multiple simultaneous requests
+    if (ajaxInProgress) {
+        console.log("Skipping update, AJAX already in progress");
+        return;
+    }
+
+    ajaxInProgress = true;
     lastUpdateTime = now;
 
     if (typeof mtf_freeprice_ajax_url === "undefined") {
         console.error("Free shipping module AJAX URL not defined");
+        ajaxInProgress = false;
         return;
     }
 
@@ -176,6 +178,7 @@ function updateFreeShippingBar() {
     })
         .then((response) => response.json())
         .then((response) => {
+            ajaxInProgress = false;
             if (response.success) {
                 updateProgressBar(response.data);
             } else {
@@ -186,12 +189,10 @@ function updateFreeShippingBar() {
             }
         })
         .catch((error) => {
+            ajaxInProgress = false;
             console.error("Error updating free shipping progress bar:", error);
         });
 }
-
-// Track if we've already shown the celebration animation
-let celebrationShown = false;
 
 /**
  * Update the progress bar with new data
@@ -254,15 +255,15 @@ function updateProgressBar(data) {
                 if (!celebrationShown) {
                     celebrationShown = true;
 
-                    // Force browser to process the above style changes before animation
-                    setTimeout(() => {
+                    // Use requestAnimationFrame for smoother animations
+                    requestAnimationFrame(function () {
                         messageElement.classList.add("celebrate");
 
                         // Remove animation class after it completes to prevent repeating
-                        setTimeout(() => {
+                        setTimeout(function () {
                             messageElement.classList.remove("celebrate");
                         }, 600);
-                    }, 10);
+                    });
                 }
             }
         }
@@ -283,42 +284,62 @@ function updateProgressBar(data) {
             progressLabels.style.display = "flex";
         }
 
-        // Update progress bar percentage
-        const progressBar = container.querySelector(".mtf-progress-bar");
-        if (progressBar) {
-            progressBar.style.width = data.progress + "%";
-        }
+        // Use requestAnimationFrame for smoother updates
+        requestAnimationFrame(function () {
+            // Update progress bar percentage
+            const progressBar = container.querySelector(".mtf-progress-bar");
+            if (progressBar) {
+                progressBar.style.width = data.progress + "%";
+            }
 
-        // Update progress value position
-        const progressValue = container.querySelector(".mtf-progress-value");
-        if (progressValue) {
-            progressValue.style.right = 100 - data.progress + "%";
-            progressValue.textContent = Math.round(data.progress) + "%";
-        }
+            // Update progress value position and text in one operation
+            const progressValue = container.querySelector(
+                ".mtf-progress-value"
+            );
+            if (progressValue) {
+                const progressPercent = Math.round(data.progress);
+                if (progressValue.textContent !== progressPercent + "%") {
+                    progressValue.style.right = 100 - data.progress + "%";
+                    progressValue.textContent = progressPercent + "%";
+                }
+            }
 
-        // Update the normal message
-        const messageElement = container.querySelector(
-            ".mtf-free-shipping-message"
-        );
-        if (messageElement) {
-            messageElement.className = "mtf-free-shipping-message";
-            messageElement.style.fontSize = "";
-            messageElement.style.padding = "";
-            messageElement.style.justifyContent = "";
-            // Restore the bottom margin for normal state
-            messageElement.style.marginBottom = "15px";
+            // Update the normal message
+            const messageElement = container.querySelector(
+                ".mtf-free-shipping-message"
+            );
+            if (
+                messageElement &&
+                !messageElement.classList.contains("normal-state-applied")
+            ) {
+                messageElement.className =
+                    "mtf-free-shipping-message normal-state-applied";
+                messageElement.style.fontSize = "";
+                messageElement.style.padding = "";
+                messageElement.style.justifyContent = "";
+                // Restore the bottom margin for normal state
+                messageElement.style.marginBottom = "15px";
 
-            const remainingFormatted = formatPrice(data.remaining_amount);
-            messageElement.innerHTML = `
-                <i class="material-icons">local_shipping</i>
-                <span>${addText} <strong>${remainingFormatted}${data.currency_sign}</strong> ${moreToGetText}</span>
-            `;
-        }
-    }
-
-    // Animate the progress bar update (only if not at 100%)
-    if (!data.has_free_shipping) {
-        animateProgressBar();
+                const remainingFormatted = formatPrice(data.remaining_amount);
+                messageElement.innerHTML = `
+                    <i class="material-icons">local_shipping</i>
+                    <span>${addText} <strong>${remainingFormatted}${data.currency_sign}</strong> ${moreToGetText}</span>
+                `;
+            } else if (
+                messageElement &&
+                messageElement.classList.contains("normal-state-applied")
+            ) {
+                // If we're already in normal state, just update the amount text to avoid full DOM replacement
+                const amountElement = messageElement.querySelector("strong");
+                if (amountElement) {
+                    const remainingFormatted = formatPrice(
+                        data.remaining_amount
+                    );
+                    amountElement.textContent =
+                        remainingFormatted + data.currency_sign;
+                }
+            }
+        });
     }
 }
 
@@ -326,20 +347,8 @@ function updateProgressBar(data) {
  * Format price number
  */
 function formatPrice(price) {
+    // Parse to ensure it's a number and round to 2 decimal places
     return parseFloat(price)
         .toFixed(2)
         .replace(/\d(?=(\d{3})+\.)/g, "$&,");
-}
-
-/**
- * Add animation to progress bar
- */
-function animateProgressBar() {
-    const progressBar = document.querySelector(".mtf-progress-bar");
-    if (progressBar) {
-        progressBar.classList.add("animated");
-        setTimeout(function () {
-            progressBar.classList.remove("animated");
-        }, 500);
-    }
 }

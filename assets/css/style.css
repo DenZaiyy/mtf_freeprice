@@ -82,13 +82,14 @@
     border-radius: 10px;
     background: linear-gradient(to right, #3498db, #2980b9);
     position: relative;
-    transition: width 0.5s ease;
+    transition: width 0.3s ease-out;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    will-change: width;
 }
 
 .mtf-progress-value {
     position: absolute;
-    top: -25px;
+    bottom: -25px;
     right: 0;
     background-color: #3498db;
     color: white;
@@ -97,7 +98,10 @@
     font-size: 12px;
     font-weight: bold;
     transform: translateX(50%);
-    transition: right 0.5s ease;
+    transition: right 0.3s ease-out;
+    white-space: nowrap;
+    will-change: right;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .mtf-progress-labels {
@@ -105,6 +109,8 @@
     justify-content: space-between;
     font-size: 14px;
     color: #7f8c8d;
+    margin-top: 2px;
+    padding: 0 2px;
 }
 
 /* Animation for the success state */
