@@ -41,7 +41,7 @@ class Mtf_Freeprice extends Module
 
         parent::__construct();
 
-        $this->displayName = $this->l('Free Shipping Progress Bar');
+        $this->displayName = $this->l('MTF - Free Shipping Progress Bar');
         $this->description = $this->l('Display a progress bar in cart showing how close customers are to free shipping');
 
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall?');
