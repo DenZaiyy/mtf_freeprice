@@ -34,13 +34,13 @@
 }
 
 .mtf-free-shipping-inner {
-    padding: 5px;
+    padding: 10px;
 }
 
 .mtf-free-shipping-message {
     display: flex;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 15px; /* This will be overridden in JavaScript when needed */
     color: #2c3e50;
     font-size: 16px;
 }
@@ -49,6 +49,12 @@
     margin-right: 10px;
     color: #3498db;
     font-size: 24px;
+}
+
+/* Success state - when free shipping is achieved */
+.mtf-free-shipping-message.success {
+    justify-content: center;
+    transition: all 0.3s ease;
 }
 
 .mtf-free-shipping-message.success i {
@@ -109,6 +115,27 @@
     to {
         transform: translateY(-5px);
     }
+}
+
+/* Celebration effect when reaching free shipping */
+@keyframes celebrate {
+    0% {
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    50% {
+        transform: scale(1.03);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.celebrate {
+    animation: celebrate 0.5s ease-out 1;
+    will-change: transform, opacity;
 }
 
 /* Animation for the progress indicator */

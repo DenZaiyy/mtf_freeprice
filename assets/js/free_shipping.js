@@ -190,6 +190,9 @@ function updateFreeShippingBar() {
         });
 }
 
+// Track if we've already shown the celebration animation
+let celebrationShown = false;
+
 /**
  * Update the progress bar with new data
  */
@@ -205,42 +208,118 @@ function updateProgressBar(data) {
         container.style.display = "block";
     }
 
-    // Update progress bar percentage
-    const progressBar = container.querySelector(".mtf-progress-bar");
-    if (progressBar) {
-        progressBar.style.width = data.progress + "%";
-    }
+    // Get translations (with fallbacks)
+    const translations = window.mtf_freeprice_translations || {};
+    const congratsText =
+        translations.congratulations ||
+        "Congratulations! You get FREE shipping!";
+    const addText = translations.add || "Add";
+    const moreToGetText =
+        translations.more_to_get || "more to get FREE shipping!";
 
-    // Update progress value position
-    const progressValue = container.querySelector(".mtf-progress-value");
-    if (progressValue) {
-        progressValue.style.right = 100 - data.progress + "%";
-        progressValue.textContent = Math.round(data.progress) + "%";
-    }
+    // Check if we have free shipping (100% progress)
+    if (data.has_free_shipping) {
+        // Hide progress bar elements when at 100%
+        const progressContainer = container.querySelector(
+            ".mtf-progress-container"
+        );
+        if (progressContainer) {
+            progressContainer.style.display = "none";
+        }
 
-    // Update message
-    const messageElement = container.querySelector(
-        ".mtf-free-shipping-message"
-    );
-    if (messageElement) {
-        if (data.has_free_shipping) {
-            messageElement.className = "mtf-free-shipping-message success";
-            messageElement.innerHTML = `
-                <i class="material-icons">local_shipping</i>
-                <span>Congratulations! You get FREE shipping!</span>
-            `;
-        } else {
+        const progressLabels = container.querySelector(".mtf-progress-labels");
+        if (progressLabels) {
+            progressLabels.style.display = "none";
+        }
+
+        // Show only the success message with larger styling
+        const messageElement = container.querySelector(
+            ".mtf-free-shipping-message"
+        );
+        if (messageElement) {
+            // Only update the DOM if necessary
+            if (!messageElement.classList.contains("success")) {
+                messageElement.className = "mtf-free-shipping-message success";
+                messageElement.style.fontSize = "1.2em";
+                messageElement.style.padding = "10px 0";
+                messageElement.style.justifyContent = "center";
+                // Remove bottom margin since the progress bar is hidden
+                messageElement.style.marginBottom = "0";
+                messageElement.innerHTML = `
+                    <i class="material-icons" style="font-size: 28px;">local_shipping</i>
+                    <span>${congratsText}</span>
+                `;
+
+                // Only play celebration animation once per page load
+                if (!celebrationShown) {
+                    celebrationShown = true;
+
+                    // Force browser to process the above style changes before animation
+                    setTimeout(() => {
+                        messageElement.classList.add("celebrate");
+
+                        // Remove animation class after it completes to prevent repeating
+                        setTimeout(() => {
+                            messageElement.classList.remove("celebrate");
+                        }, 600);
+                    }, 10);
+                }
+            }
+        }
+    } else {
+        // Reset celebration flag when we're no longer at 100%
+        celebrationShown = false;
+
+        // Show progress bar when not at 100%
+        const progressContainer = container.querySelector(
+            ".mtf-progress-container"
+        );
+        if (progressContainer) {
+            progressContainer.style.display = "block";
+        }
+
+        const progressLabels = container.querySelector(".mtf-progress-labels");
+        if (progressLabels) {
+            progressLabels.style.display = "flex";
+        }
+
+        // Update progress bar percentage
+        const progressBar = container.querySelector(".mtf-progress-bar");
+        if (progressBar) {
+            progressBar.style.width = data.progress + "%";
+        }
+
+        // Update progress value position
+        const progressValue = container.querySelector(".mtf-progress-value");
+        if (progressValue) {
+            progressValue.style.right = 100 - data.progress + "%";
+            progressValue.textContent = Math.round(data.progress) + "%";
+        }
+
+        // Update the normal message
+        const messageElement = container.querySelector(
+            ".mtf-free-shipping-message"
+        );
+        if (messageElement) {
             messageElement.className = "mtf-free-shipping-message";
+            messageElement.style.fontSize = "";
+            messageElement.style.padding = "";
+            messageElement.style.justifyContent = "";
+            // Restore the bottom margin for normal state
+            messageElement.style.marginBottom = "15px";
+
             const remainingFormatted = formatPrice(data.remaining_amount);
             messageElement.innerHTML = `
                 <i class="material-icons">local_shipping</i>
-                <span>Add <strong>${remainingFormatted}${data.currency_sign}</strong> more to get FREE shipping!</span>
+                <span>${addText} <strong>${remainingFormatted}${data.currency_sign}</strong> ${moreToGetText}</span>
             `;
         }
     }
 
-    // Animate the progress bar update
-    animateProgressBar();
+    // Animate the progress bar update (only if not at 100%)
+    if (!data.has_free_shipping) {
+        animateProgressBar();
+    }
 }
 
 /**

@@ -179,14 +179,16 @@ class Mtf_Freeprice extends Module
             ['position' => 'bottom', 'priority' => 150]
         );
 
-        // Add more details to JavaScript definitions
+        // Pass translations to JavaScript
         Media::addJsDef([
             'mtf_freeprice_ajax_url' => $this->context->link->getModuleLink($this->name, 'ajaxFreeShipping'),
             'free_shipping_amount' => (float) Configuration::get('MTF_FREE_SHIPPING_AMOUNT'),
             'mtf_freeprice_translations' => [
                 'congratulations' => $this->l('Congratulations! You get FREE shipping!'),
                 'add' => $this->l('Add'),
-                'more_to_get' => $this->l('more to get FREE shipping!')
+                'more_to_get' => $this->l('more to get FREE shipping!'),
+                'free_shipping' => $this->l('FREE shipping'),
+                'percent_complete' => $this->l('% complete')
             ]
         ]);
     }
