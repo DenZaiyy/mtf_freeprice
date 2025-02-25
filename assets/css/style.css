@@ -1,0 +1,28 @@
+.free-shipping-progress {
+    padding: 10px;
+    border-radius: 5px;
+    font-size: 16px;
+    text-align: center;
+}
+
+.free-shipping-progress p {
+    margin: 0;
+    font-weight: bold;
+}
+
+.free-shipping-progress progress {
+    width: 100%;
+    height: 10px;
+    border-radius: 5px;
+    background: #ddd;
+}
+
+.free-shipping-progress progress::-webkit-progress-bar {
+    background: #ddd;
+    border-radius: 5px;
+}
+
+.free-shipping-progress progress::-webkit-progress-value {
+    background: #28a745;
+    border-radius: 5px;
+}
