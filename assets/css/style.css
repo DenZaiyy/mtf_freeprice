@@ -1,28 +1,158 @@
-.free-shipping-progress {
-    padding: 10px;
-    border-radius: 5px;
+/**
+ * 2007-2023 PrestaShop
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ *
+ * DISCLAIMER
+ * Do not edit or add to this file if you wish to upgrade PrestaShop to newer
+ * versions in the future. If you wish to customize PrestaShop for your
+ * needs please refer to http://www.prestashop.com for more information.
+ *
+ * @author    PrestaShop SA <contact@prestashop.com>
+ * @copyright 2007-2023 PrestaShop SA
+ * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ * International Registered Trademark & Property of PrestaShop SA
+ */
+
+.mtf-free-shipping-container {
+    font-family: "Roboto", sans-serif;
+    border-radius: 8px;
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+    border: 1px solid #dee2e6;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.mtf-free-shipping-container:hover {
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+.mtf-free-shipping-inner {
+    padding: 5px;
+}
+
+.mtf-free-shipping-message {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    color: #2c3e50;
     font-size: 16px;
-    text-align: center;
 }
 
-.free-shipping-progress p {
-    margin: 0;
+.mtf-free-shipping-message i {
+    margin-right: 10px;
+    color: #3498db;
+    font-size: 24px;
+}
+
+.mtf-free-shipping-message.success i {
+    color: #2ecc71;
+    animation: bounce 1s infinite alternate;
+}
+
+.mtf-free-shipping-message strong {
+    font-weight: 700;
+    color: #e74c3c;
+}
+
+.mtf-progress-container {
+    height: 14px;
+    background-color: #ecf0f1;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    position: relative;
+    overflow: visible;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.mtf-progress-bar {
+    height: 100%;
+    border-radius: 10px;
+    background: linear-gradient(to right, #3498db, #2980b9);
+    position: relative;
+    transition: width 0.5s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.mtf-progress-value {
+    position: absolute;
+    top: -25px;
+    right: 0;
+    background-color: #3498db;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 12px;
     font-weight: bold;
+    transform: translateX(50%);
+    transition: right 0.5s ease;
 }
 
-.free-shipping-progress progress {
-    width: 100%;
-    height: 10px;
-    border-radius: 5px;
-    background: #ddd;
+.mtf-progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #7f8c8d;
 }
 
-.free-shipping-progress progress::-webkit-progress-bar {
-    background: #ddd;
-    border-radius: 5px;
+/* Animation for the success state */
+@keyframes bounce {
+    from {
+        transform: translateY(0);
+    }
+    to {
+        transform: translateY(-5px);
+    }
 }
 
-.free-shipping-progress progress::-webkit-progress-value {
-    background: #28a745;
-    border-radius: 5px;
+/* Animation for the progress indicator */
+@keyframes pulse {
+    0% {
+        transform: translateX(-50%) scale(1);
+    }
+    50% {
+        transform: translateX(-50%) scale(1.1);
+    }
+    100% {
+        transform: translateX(-50%) scale(1);
+    }
+}
+
+/* For electrical products theme - adds electric blue touches */
+.mtf-free-shipping-container.electrical-theme {
+    background: linear-gradient(to right, #f1f8fe, #e3f2fd);
+    border-color: #bbdefb;
+}
+
+.mtf-free-shipping-container.electrical-theme .mtf-progress-bar {
+    background: linear-gradient(to right, #039be5, #01579b);
+}
+
+.mtf-free-shipping-container.electrical-theme .mtf-progress-value {
+    background-color: #01579b;
+}
+
+.mtf-free-shipping-container.electrical-theme .mtf-free-shipping-message i {
+    color: #039be5;
+}
+
+/* Responsive styles */
+@media (max-width: 767px) {
+    .mtf-free-shipping-message {
+        font-size: 14px;
+    }
+
+    .mtf-free-shipping-message i {
+        font-size: 20px;
+    }
+
+    .mtf-progress-labels {
+        font-size: 12px;
+    }
 }
