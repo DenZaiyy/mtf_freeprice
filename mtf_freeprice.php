@@ -31,7 +31,7 @@ class Mtf_Freeprice extends Module
         $this->name = 'mtf_freeprice';
         $this->tab = 'front_office_features';
         $this->version = '1.0.0';
-        $this->author = 'Your Name';
+        $this->author = 'MTFibertech';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
             'min' => '8.0.0',
