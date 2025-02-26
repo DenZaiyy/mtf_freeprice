@@ -49,7 +49,7 @@ class Mtf_Freeprice extends Module
 
     public function install()
     {
-        Configuration::updateValue('MTF_FREE_SHIPPING_AMOUNT', 100);
+        Configuration::updateValue('MTF_FREE_SHIPPING_AMOUNT', 50);
         
         return parent::install() &&
             $this->registerHook('displayShoppingCartFooter') &&
