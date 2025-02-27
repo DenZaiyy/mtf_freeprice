@@ -1,4 +1,5 @@
 <?php
+
 /**
  * 2007-2023 PrestaShop
  *
@@ -49,82 +50,86 @@ class Mtf_Freeprice extends Module
 
     public function install()
     {
-        Configuration::updateValue('MTF_FREE_SHIPPING_AMOUNT', 50);
-        
+        Configuration::updateValue('MTF_FREEPRICE_FREE_SHIPPING_AMOUNT', 50);
+
         return parent::install() &&
+            $this->installTab() &&
             $this->registerHook('displayShoppingCartFooter') &&
             $this->registerHook('header');
     }
 
     public function uninstall()
     {
-        Configuration::deleteByName('MTF_FREE_SHIPPING_AMOUNT');
-        
-        return parent::uninstall();
+        Configuration::deleteByName('MTF_FREEPRICE_FREE_SHIPPING_AMOUNT');
+
+        return parent::uninstall() &&
+            $this->uninstallTab();
     }
 
-    public function getContent()
+    /**
+     * Install Tab
+     */
+    public function installTab()
     {
-        $output = '';
-        
-        if (Tools::isSubmit('submit' . $this->name)) {
-            $freeShippingAmount = (float) Tools::getValue('MTF_FREE_SHIPPING_AMOUNT');
-            
-            if ($freeShippingAmount <= 0) {
-                $output .= $this->displayError($this->l('Invalid amount'));
-            } else {
-                Configuration::updateValue('MTF_FREE_SHIPPING_AMOUNT', $freeShippingAmount);
-                $output .= $this->displayConfirmation($this->l('Settings updated'));
+        // First check if MTF Modules tab exists
+        $tabRepository = $this->get('prestashop.core.admin.tab.repository');
+        $tabId = null;
+
+        try {
+            $tabParent = $tabRepository->findOneByClassName('AdminMTFModules');
+            if ($tabParent) {
+                $tabId = $tabParent->getId();
+            }
+        } catch (Exception $e) {
+            // Parent tab not found
+        }
+
+        // If parent tab not found, place under Improve
+        if (!$tabId) {
+            try {
+                $tabParent = $tabRepository->findOneByClassName('IMPROVE');
+                if ($tabParent) {
+                    $tabId = $tabParent->getId();
+                }
+            } catch (Exception $e) {
+                // Fallback to root
+                $tabId = 0;
             }
         }
-        
-        return $output . $this->renderForm();
+
+        $tab = new Tab();
+        $tab->active = 1;
+        $tab->class_name = 'AdminMtfFreePrice';
+        $tab->name = [];
+
+        foreach (Language::getLanguages(true) as $lang) {
+            $tab->name[$lang['id_lang']] = 'Free Price';
+        }
+
+        $tab->id_parent = $tabId;
+        $tab->module = $this->name;
+
+        return $tab->add();
     }
 
-    protected function renderForm()
+    /**
+     * Uninstall Tab
+     */
+    public function uninstallTab()
     {
-        $fields_form = [
-            'form' => [
-                'legend' => [
-                    'title' => $this->l('Settings'),
-                    'icon' => 'icon-cogs',
-                ],
-                'input' => [
-                    [
-                        'type' => 'text',
-                        'label' => $this->l('Free shipping amount'),
-                        'name' => 'MTF_FREE_SHIPPING_AMOUNT',
-                        'suffix' => Context::getContext()->currency->sign,
-                        'desc' => $this->l('Set the amount needed to reach free shipping'),
-                        'required' => true,
-                    ],
-                ],
-                'submit' => [
-                    'title' => $this->l('Save'),
-                ],
-            ],
-        ];
+        $tabRepository = $this->get('prestashop.core.admin.tab.repository');
 
-        $helper = new HelperForm();
-        $helper->show_toolbar = false;
-        $helper->table = $this->table;
-        $lang = new Language((int) Configuration::get('PS_LANG_DEFAULT'));
-        $helper->default_form_language = $lang->id;
-        $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG') ?: 0;
-        $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submit' . $this->name;
-        $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false) .
-            '&configure=' . $this->name .
-            '&tab_module=' . $this->tab .
-            '&module_name=' . $this->name;
-        $helper->token = Tools::getAdminTokenLite('AdminModules');
-        $helper->tpl_vars = [
-            'fields_value' => ['MTF_FREE_SHIPPING_AMOUNT' => Configuration::get('MTF_FREE_SHIPPING_AMOUNT')],
-            'languages' => $this->context->controller->getLanguages(),
-            'id_language' => $this->context->language->id,
-        ];
+        try {
+            $tab = $tabRepository->findOneByClassName('AdminMtfFreePrice');
+            if ($tab) {
+                $tabPS = new Tab($tab->getId());
+                return $tabPS->delete();
+            }
+        } catch (Exception $e) {
+            // Tab not found, nothing to delete
+        }
 
-        return $helper->generateForm([$fields_form]);
+        return true;
     }
 
     public function hookDisplayShoppingCartFooter($params)
@@ -144,8 +149,8 @@ class Mtf_Freeprice extends Module
         }
 
         $cartTotal = $cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
-        $freeShippingAmount = (float) Configuration::get('MTF_FREE_SHIPPING_AMOUNT');
-        
+        $freeShippingAmount = (float) Configuration::get('MTF_FREEPRICE_FREE_SHIPPING_AMOUNT');
+
         $remainingAmount = max(0, $freeShippingAmount - $cartTotal);
         $progress = min(100, ($cartTotal / $freeShippingAmount) * 100);
 
@@ -182,7 +187,7 @@ class Mtf_Freeprice extends Module
         // Pass translations to JavaScript
         Media::addJsDef([
             'mtf_freeprice_ajax_url' => $this->context->link->getModuleLink($this->name, 'ajaxFreeShipping'),
-            'free_shipping_amount' => (float) Configuration::get('MTF_FREE_SHIPPING_AMOUNT'),
+            'free_shipping_amount' => (float) Configuration::get('MTF_FREEPRICE_FREE_SHIPPING_AMOUNT'),
             'mtf_freeprice_translations' => [
                 'congratulations' => $this->l('Congratulations! You get FREE shipping!'),
                 'add' => $this->l('Add'),
