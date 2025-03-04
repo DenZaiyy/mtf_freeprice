@@ -78,17 +78,30 @@ class Mtf_Freeprice extends Module
             $improveTab = $tabRepository->findOneByClassName('IMPROVE');
             $parentId = $improveTab ? $improveTab->getId() : 0;
         } else {
-            // Get the Configure tab ID directly from database
-            $sql = 'SELECT id_tab FROM ' . _DB_PREFIX_ . 'tab WHERE class_name = "AdminMTFConfigure"';
-            $configureId = Db::getInstance()->getValue($sql);
+            // Instancier le module mtf_tabs pour accéder à ses méthodes
+            $mtfTabsModule = Module::getInstanceByName('mtf_tabs');
 
-            if (!$configureId) {
-                // Fallback to main MTF Modules tab
-                $sql = 'SELECT id_tab FROM ' . _DB_PREFIX_ . 'tab WHERE class_name = "AdminMTFModules"';
+            // Vérifier si la classe est disponible avant d'essayer d'utiliser ses méthodes
+            if (method_exists('Mtf_Tabs', 'getConfigureTabId')) {
+                $configureId = Mtf_Tabs::getConfigureTabId();
+
+                if (!$configureId && method_exists('Mtf_Tabs', 'getParentTabId')) {
+                    $configureId = Mtf_Tabs::getParentTabId();
+                }
+
+                $parentId = $configureId ?: 0;
+            } else {
+                // Fallback: récupérer directement l'ID depuis la base de données
+                $sql = 'SELECT id_tab FROM ' . _DB_PREFIX_ . 'tab WHERE class_name = "AdminMTFConfigure"';
                 $configureId = Db::getInstance()->getValue($sql);
-            }
 
-            $parentId = $configureId ?: 0;
+                if (!$configureId) {
+                    $sql = 'SELECT id_tab FROM ' . _DB_PREFIX_ . 'tab WHERE class_name = "AdminMTFModules"';
+                    $configureId = Db::getInstance()->getValue($sql);
+                }
+
+                $parentId = $configureId ?: 0;
+            }
         }
 
         $tab = new Tab();
