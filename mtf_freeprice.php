@@ -71,30 +71,24 @@ class Mtf_Freeprice extends Module
      */
     public function installTab()
     {
-        // First check if MTF Modules tab exists
-        $tabRepository = $this->get('prestashop.core.admin.tab.repository');
-        $tabId = null;
+        // First check if mtf_tabs module exists and is installed
+        if (!Module::isInstalled('mtf_tabs')) {
+            // Fallback to IMPROVE tab
+            $tabRepository = $this->get('prestashop.core.admin.tab.repository');
+            $improveTab = $tabRepository->findOneByClassName('IMPROVE');
+            $parentId = $improveTab ? $improveTab->getId() : 0;
+        } else {
+            // Get the Configure tab ID directly from database
+            $sql = 'SELECT id_tab FROM ' . _DB_PREFIX_ . 'tab WHERE class_name = "AdminMTFConfigure"';
+            $configureId = Db::getInstance()->getValue($sql);
 
-        try {
-            $tabParent = $tabRepository->findOneByClassName('AdminMTFModules');
-            if ($tabParent) {
-                $tabId = $tabParent->getId();
+            if (!$configureId) {
+                // Fallback to main MTF Modules tab
+                $sql = 'SELECT id_tab FROM ' . _DB_PREFIX_ . 'tab WHERE class_name = "AdminMTFModules"';
+                $configureId = Db::getInstance()->getValue($sql);
             }
-        } catch (Exception $e) {
-            // Parent tab not found
-        }
 
-        // If parent tab not found, place under Improve
-        if (!$tabId) {
-            try {
-                $tabParent = $tabRepository->findOneByClassName('IMPROVE');
-                if ($tabParent) {
-                    $tabId = $tabParent->getId();
-                }
-            } catch (Exception $e) {
-                // Fallback to root
-                $tabId = 0;
-            }
+            $parentId = $configureId ?: 0;
         }
 
         $tab = new Tab();
@@ -106,7 +100,7 @@ class Mtf_Freeprice extends Module
             $tab->name[$lang['id_lang']] = 'Free Price';
         }
 
-        $tab->id_parent = $tabId;
+        $tab->id_parent = $parentId;
         $tab->module = $this->name;
 
         return $tab->add();
