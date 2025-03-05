@@ -19,7 +19,7 @@
 * International Registered Trademark & Property of PrestaShop SA
 *}
 
-<div class="mtf-free-shipping-container card mb-3" id="mtf-free-shipping-bar">
+<div class="mtf-free-shipping-container" id="mtf-free-shipping-bar">
     <div class="card-body">
         <div class="mtf-free-shipping-inner">
             {if $has_free_shipping}

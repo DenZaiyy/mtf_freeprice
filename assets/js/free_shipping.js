@@ -39,7 +39,9 @@ document.addEventListener("DOMContentLoaded", function () {
     listenToCartEvents();
 
     // Initial update on page load
-    updateFreeShippingBar();
+    setTimeout(function () {
+        updateFreeShippingBar();
+    }, 300);
 
     // For debugging
     console.log("Free shipping progress bar initialized");
@@ -85,8 +87,11 @@ function listenToCartEvents() {
 
     cartEvents.forEach(function (eventName) {
         document.addEventListener(eventName, function (event) {
-            console.log("Cart event detected:", eventName);
-            updateFreeShippingBar();
+            // Debounce multiple rapid events
+            clearTimeout(window.mtf_debounce_timer);
+            window.mtf_debounce_timer = setTimeout(function () {
+                updateFreeShippingBar();
+            }, 300);
         });
     });
 
@@ -104,8 +109,11 @@ function addQuantityChangeListeners() {
     if (cartContainer) {
         // Set up observer to watch for DOM changes in the cart
         const observer = new MutationObserver(function (mutations) {
-            // After any DOM change in the cart, update the shipping bar
-            updateFreeShippingBar();
+            // Debounce multiple rapid mutations
+            clearTimeout(window.mtf_observer_timer);
+            window.mtf_observer_timer = setTimeout(function () {
+                updateFreeShippingBar();
+            }, 300);
         });
 
         // Start observing the cart container
@@ -125,14 +133,20 @@ function addQuantityChangeListeners() {
             event.target.closest(".js-update-product-quantity-down") ||
             event.target.closest(".js-cart-action-button")
         ) {
-            updateFreeShippingBar();
+            clearTimeout(window.mtf_click_timer);
+            window.mtf_click_timer = setTimeout(function () {
+                updateFreeShippingBar();
+            }, 300);
         }
     });
 
     // Add a change event listener to the entire document to catch quantity input changes
     document.addEventListener("change", function (event) {
         if (event.target.classList.contains("js-cart-line-product-quantity")) {
-            updateFreeShippingBar();
+            clearTimeout(window.mtf_input_timer);
+            window.mtf_input_timer = setTimeout(function () {
+                updateFreeShippingBar();
+            }, 300);
         }
     });
 }
@@ -141,9 +155,9 @@ function addQuantityChangeListeners() {
  * Update free shipping progress bar via AJAX
  */
 function updateFreeShippingBar() {
-    // Prevent updating too frequently (at least 1000ms between updates)
+    // Prevent updating too frequently
     const now = Date.now();
-    if (now - lastUpdateTime < 1000) {
+    if (now - lastUpdateTime < 500) {
         console.log("Skipping update, too frequent");
         return;
     }
@@ -157,7 +171,11 @@ function updateFreeShippingBar() {
     ajaxInProgress = true;
     lastUpdateTime = now;
 
-    if (typeof mtf_freeprice_ajax_url === "undefined") {
+    // Check if URL exists
+    if (
+        typeof mtf_freeprice_ajax_url === "undefined" ||
+        !mtf_freeprice_ajax_url
+    ) {
         console.error("Free shipping module AJAX URL not defined");
         ajaxInProgress = false;
         return;
@@ -173,24 +191,45 @@ function updateFreeShippingBar() {
             "Cache-Control": "no-cache, no-store, must-revalidate",
             Pragma: "no-cache",
             Expires: "0",
+            "X-Requested-With": "XMLHttpRequest",
         },
         cache: "no-store",
     })
-        .then((response) => response.json())
-        .then((response) => {
+        .then(function (response) {
+            if (!response.ok) {
+                throw new Error("Network response was not ok");
+            }
+            return response.text(); // Get as text first to check if empty
+        })
+        .then(function (text) {
+            if (!text || text.trim() === "") {
+                throw new Error("Empty response received");
+            }
+            return JSON.parse(text); // Now parse as JSON
+        })
+        .then(function (response) {
             ajaxInProgress = false;
             if (response.success) {
                 updateProgressBar(response.data);
             } else {
-                console.error(
-                    "Error updating free shipping progress bar:",
-                    response.message
-                );
+                console.error("Error from server:", response.message);
+                // Still update UI with the provided data if available
+                if (response.data) {
+                    updateProgressBar(response.data);
+                }
             }
         })
-        .catch((error) => {
+        .catch(function (error) {
             ajaxInProgress = false;
             console.error("Error updating free shipping progress bar:", error);
+
+            // If we can't get data from server, hide the container as a fallback
+            const container = document.querySelector(
+                ".mtf-free-shipping-container"
+            );
+            if (container) {
+                container.style.display = "none";
+            }
         });
 }
 
@@ -202,7 +241,7 @@ function updateProgressBar(data) {
     if (!container) return;
 
     // Hide the container if cart is empty (total is 0)
-    if (data.cart_total <= 0) {
+    if (data.cart_empty || data.cart_total <= 0) {
         container.style.display = "none";
         return;
     } else {
